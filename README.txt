@@ -23,4 +23,5 @@ This version is modified to build on FreeBSD 11.0-CURRENT
 4) build isn't complete. switch to libopendcp/ and 'make', then switch to cli/ and 'make'. 
 	Copy libopendcp/libopendcp.so to LD_PATH, ie /usr/local/lib
 	there is no install at the moment. 'make clean' works.
+5) removed OpenMP code.. will be replacing the parallelization code shortly.
 
