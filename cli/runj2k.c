@@ -59,7 +59,7 @@ void usage (void) {
 	printf("\nrunj2k Copyright 2014 by Waitman Gobble <ns@waitman.net>\n");
 	printf("\nusage: runj2k [-enatvh] /path/to/file\n\n");
 	printf("\
--e\tCommand Line Options to pass to runj2k, example: -e '-e -R' \n\
+-e\tCommand Line Options to pass to opendcp_j2k, example: -e '-e -R' \n\
 -n\tNumber of Threads\n\
 -a\tAutomatically determine number of threads\n\
 -t\tReport Exec Time (secs)\n\
