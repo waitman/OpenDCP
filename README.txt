@@ -16,12 +16,32 @@ If you have any issues, please create a bug or enhancement at http://code.google
 **** NOTE: Modified Version based on upstream svn .30
 by Waitman Gobble <ns@waitman.net>
 This version is modified to build on FreeBSD 11.0-CURRENT
+
 1) Replaced cmake build with Makefile
-2) Removed libasdcplib, (install multimedia/asdcplib from ports) - note: the port does not install all the headers,
-	copy them from wrksrc into /usr/local/include after make install and before clean
+2) Removed libasdcplib (see ports section below)
 3) libdcp is built as shared library
 4) build isn't complete. switch to libopendcp/ and 'make', then switch to cli/ and 'make'. 
 	Copy libopendcp/libopendcp.so to LD_PATH, ie /usr/local/lib
 	there is no install at the moment. 'make clean' works.
-5) removed OpenMP code.. will be replacing the parallelization code shortly.
+5) removed OpenMP code. 
+6) changed opendcp_j2k so it only operates on one file at a time.
+7) added runj2k (see license in cli/LICENSE-BSD). This program will let you 
+	specify number of threads to launch, or optionally you can use a switch
+	to have the program calculate the optimal number of threads.
+
+
+*** PORTS ****
+
+security/xmlsec1
+textproc/libxslt
+textproc/expat2
+graphics/tiff
+graphics/openjpeg
+multimedia/asdcplib
+
+Note: The multimedia/asdcplib port does not install all the header files.
+Workaround is to 'make install', cd to wrksrc and copy *.h to
+/usr/local/include. Then 'make clean' to clean up wrksrc.
+multimedia/asdcplib also installs libkumu.
+
 

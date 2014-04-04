@@ -51,4 +51,5 @@ libopendcp:
 
 clean:
 	rm -f *.o
-	rm -f *.so
+	rm -f .so
+	rm -f *.so.*
