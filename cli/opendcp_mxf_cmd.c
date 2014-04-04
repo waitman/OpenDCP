@@ -258,6 +258,7 @@ int main (int argc, char **argv) {
                 break;
 
             case 'n':
+
                 if (!strcmp(optarg, "smpte")) {
                     opendcp->ns = XML_NS_SMPTE;
                 }
