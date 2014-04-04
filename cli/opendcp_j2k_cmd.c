@@ -16,17 +16,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <getopt.h>
-#include <signal.h>
-/*
-#ifdef OPENMP
-#include <omp.h>
-#endif
-*/
-#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <getopt.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <malloc_np.h>
@@ -35,7 +29,7 @@
 #include <opendcp_decoder.h>
 #include "opendcp_cli.h"
 
-int SIGINT_received = 0;
+
 
 /* prototypes */
 char *basename_noext(const char *str);
@@ -62,8 +56,8 @@ void dcp_usage() {
     fprintf(fp, "Usage:\n");
     fprintf(fp, "       opendcp_j2k -i <file> -o <file> [options ...]\n\n");
     fprintf(fp, "Required:\n");
-    fprintf(fp, "       -i | --input <file>            - input file or directory\n");
-    fprintf(fp, "       -o | --output <file>           - output file or directory\n");
+    fprintf(fp, "       -i | --input <file>            - input file\n");
+    fprintf(fp, "       -o | --output <file>           - output directory\n");
     fprintf(fp, "\n");
     fprintf(fp, "Options:\n");
     fprintf(fp, "       -r | --rate <rate>                 - frame rate (default 24)\n");
@@ -157,15 +151,7 @@ void progress_bar(int val, int total) {
     int x;
     int step = 20;
     float c = (float)step / total * (float)val;
-/*
-#ifdef OPENMP
-    int nthreads = omp_get_num_threads();
-#else
-*/
     int nthreads = 1;
-/*
-#endif
-*/
     printf("  JPEG2000 Conversion (%d thread", nthreads);
 
     if (nthreads > 1) {
@@ -188,12 +174,10 @@ void progress_bar(int val, int total) {
 }
 
 int main (int argc, char **argv) {
-    int rc, c, result, count = 0;
-    int openmp_flag = 0;
+    int c, result;
     opendcp_t *opendcp;
     char *in_path  = NULL;
     char *out_path = NULL;
-    filelist_t *filelist;
 
     if ( argc <= 1 ) {
         dcp_usage();
@@ -210,12 +194,6 @@ int main (int argc, char **argv) {
     opendcp->j2k.start_frame = 1;
     opendcp->j2k.bw          = 250;
     opendcp->tmp_path        = NULL;
-/*
-#ifdef OPENMP
-    openmp_flag              = 1;
-    opendcp->threads         = omp_get_num_procs();
-#endif
-*/
 
     /* parse options */
     while (1)
@@ -474,140 +452,21 @@ int main (int argc, char **argv) {
         dcp_fatal(opendcp, "Missing input file");
     }
 
-    if (in_path[strlen(in_path) - 1] == '/') {
-        in_path[strlen(in_path) - 1] = '\0';
-    }
-
     /* output path check */
     if (out_path == NULL) {
-        dcp_fatal(opendcp, "Missing output file");
+        dcp_fatal(opendcp, "Missing output path");
     }
 
-    if (out_path[strlen(out_path) - 1] == '/') {
-        out_path[strlen(out_path) - 1] = '\0';
+    opendcp->j2k.end_frame = 1;
+    opendcp->j2k.start_frame = 1;
+    char out[MAX_FILENAME_LENGTH];
+    build_j2k_filename(in_path, out_path, out);
+    if(access(out, F_OK) != 0 || opendcp->j2k.no_overwrite == 0) {
+        result = convert_to_j2k(opendcp, in_path, out);
+    } else {
+        result = OPENDCP_NO_ERROR;
+	dcp_fatal(opendcp, "Exiting...");
     }
-
-    /* make sure path modes are ok */
-    if (is_dir(in_path) && !is_dir(out_path)) {
-        dcp_fatal(opendcp, "Input is a directory, so output must also be a directory");
-    }
-
-    /* get file list */
-    OPENDCP_LOG(LOG_DEBUG, "searching path %s", in_path);
-    
-    char *extensions = opendcp_decoder_extensions();
-
-    filelist = get_filelist(in_path, extensions);
-
-    if (extensions != NULL) {
-        free(extensions);
-    }
-
-    if (filelist == NULL || filelist->nfiles < 1) {
-        dcp_fatal(opendcp, "No input files located");
-    }
-
-    /* end frame check */
-    if (opendcp->j2k.end_frame) {
-        if (opendcp->j2k.end_frame > filelist->nfiles) {
-            dcp_fatal(opendcp, "End frame is greater than the actual frame count");
-        }
-    }
-    else {
-        opendcp->j2k.end_frame = filelist->nfiles;
-    }
-
-    /* start frame check */
-    if (opendcp->j2k.start_frame > opendcp->j2k.end_frame) {
-        dcp_fatal(opendcp, "Start frame must be less than end frame");
-    }
-
-    OPENDCP_LOG(LOG_DEBUG, "checking file sequence", in_path);
-
-    /* Sort files by index, and make sure they're sequential. */
-    if (order_indexed_files(filelist->files, filelist->nfiles) != OPENDCP_NO_ERROR) {
-        dcp_fatal(opendcp, "Could not order image files");
-    }
-
-    rc = ensure_sequential(filelist->files, filelist->nfiles);
-
-    if (rc != OPENDCP_NO_ERROR) {
-        OPENDCP_LOG(LOG_WARN, "Filenames not sequential between %s and %s.", filelist->files[rc], filelist->files[rc + 1]);
-    }
-
-    if (opendcp->log_level > 0 && opendcp->log_level < 3) {
-        progress_bar(0, 0);
-    }
-
-/*
-#ifdef OPENMP
-    omp_set_num_threads(opendcp->threads);
-    OPENDCP_LOG(LOG_DEBUG, "OpenMP Enable");
-#endif
-*/
-
-    count = opendcp->j2k.start_frame;
-
-/*
-    #pragma omp parallel for private(c)
-*/
-
-    for (c = opendcp->j2k.start_frame - 1; c < opendcp->j2k.end_frame; c++) {
-/*
-        #pragma omp flush(SIGINT_received)
-*/
-
-        /* check for non-ascii filenames under windows */
-#ifdef _WIN32
-
-        if (is_filename_ascii(filelist->files[c]) == 0) {
-            OPENDCP_LOG(LOG_WARN, "Filename %s contains non-ascii characters, skipping", filelist->files[c]);
-            continue;
-        }
-
-#endif
-
-        char out[MAX_FILENAME_LENGTH];
-        build_j2k_filename(filelist->files[c], out_path, out);
-
-        if (!SIGINT_received) {
-            OPENDCP_LOG(LOG_INFO, "JPEG2000 conversion %s started OPENMP: %d", filelist->files[c], openmp_flag);
-
-            if(access(out, F_OK) != 0 || opendcp->j2k.no_overwrite == 0) {
-                result = convert_to_j2k(opendcp, filelist->files[c], out);
-            }
-            else {
-                result = OPENDCP_NO_ERROR;
-            }
-
-            if (count) {
-                if (opendcp->log_level > 0 && opendcp->log_level < 3) {
-                    progress_bar(count, opendcp->j2k.end_frame);
-                }
-            }
-
-            if (result == OPENDCP_ERROR) {
-                OPENDCP_LOG(LOG_ERROR, "JPEG2000 conversion %s failed", filelist->files[c]);
-                dcp_fatal(opendcp, "Exiting...");
-            }
-            else {
-                OPENDCP_LOG(LOG_INFO, "JPEG2000 conversion %s complete", filelist->files[c]);
-            }
-
-            count++;
-        }
-    }
-
-    if (opendcp->log_level > 0 && opendcp->log_level < 3) {
-        progress_bar(count - 1, opendcp->j2k.end_frame);
-    }
-
-    filelist_free(filelist);
-
-    if (opendcp->log_level > 0) {
-        printf("\n");
-    }
-
     opendcp_delete(opendcp);
 
     exit(0);
