@@ -35,7 +35,6 @@
 char *basename_noext(const char *str);
 int   is_dir(char *path);
 void  build_j2k_filename(const char *in, char *path, char *out);
-void  progress_bar(int val, int total);
 void  version();
 void  dcp_usage();
 
@@ -145,32 +144,6 @@ int is_dir(char *path) {
     }
 
     return 0;
-}
-
-void progress_bar(int val, int total) {
-    int x;
-    int step = 20;
-    float c = (float)step / total * (float)val;
-    int nthreads = 1;
-    printf("  JPEG2000 Conversion (%d thread", nthreads);
-
-    if (nthreads > 1) {
-        printf("s");
-    }
-
-    printf(") [");
-
-    for (x = 0; x < step; x++) {
-        if (c > x) {
-            printf("=");
-        }
-        else {
-            printf(" ");
-        }
-    }
-
-    printf("] 100%% [%d/%d]\r", val, total);
-    fflush(stdout);
 }
 
 int main (int argc, char **argv) {
@@ -461,12 +434,17 @@ int main (int argc, char **argv) {
     opendcp->j2k.start_frame = 1;
     char out[MAX_FILENAME_LENGTH];
     build_j2k_filename(in_path, out_path, out);
+
+    /* check if file already exists */
+	struct stat st;
+	if (stat(out,&st)!=0) {
     if(access(out, F_OK) != 0 || opendcp->j2k.no_overwrite == 0) {
         result = convert_to_j2k(opendcp, in_path, out);
     } else {
         result = OPENDCP_NO_ERROR;
 	dcp_fatal(opendcp, "Exiting...");
     }
+	}
     opendcp_delete(opendcp);
 
     exit(0);

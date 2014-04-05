@@ -117,25 +117,14 @@ int is_filename_ascii(const char *s) {
 }
 
 int strcasefind(const char *s, const char *find) {
-    char c, sc;
-    size_t len;
 
-    if ((c = *find++) != 0) {
-        c = tolower((unsigned char)c);
-        len = strlen(find);
+	if (strcasestr(s,find)!=NULL)
+	{
+		return 1;
+	} else {
+		return 0;
+	}
 
-        do {
-            do {
-                if ((sc = *s++) == 0) {
-                    return 0;
-                }
-            } while ((char)tolower((unsigned char)sc) != c);
-        } while (strncasecmp(s, find, len) != 0);
-
-        s--;
-    }
-
-    return 1;
 }
 
 /* populates prefix with the longest common prefix of s1 and s2. */

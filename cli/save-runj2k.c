@@ -17,11 +17,9 @@ char cmd[1024] = {0};
 /* Max number of threads to launch */
 #define MAX_THREADS 4
 /* override with switch */
-int	num_threads = MAX_THREADS;
+int num_threads = MAX_THREADS;
 /* verbosity flag */
-int	verbose = 0;
-long	cnt = 0;
-time_t	exec_begin, exec_end;
+int verbose = 0;
 
 typedef struct {
         char *f;
@@ -44,32 +42,10 @@ void *runner(void *arg) {
 				char out[1024]={0};
 				/* needs to be in your path */
 				line[(strlen(line)-1)]='\0';
-				char new[12] = {0};
-				strncpy(new,line+36,10);
-/* convert! */
-				sprintf(out, "convert \"%s\" /tmp/%s.j2c",line,new);
-				if (verbose)
-					printf("%li\t%s\n",ln,out);
-				system((char *)out);
-
-				sprintf(out, "opendcp_j2k\t%s\t-i /tmp/%s.j2c",cmd,new);
+				sprintf(out, "opendcp_j2k\t%s\t-i \"%s\"",cmd,line);
 				if (verbose) 
 					printf("%li\t%s\n",ln,out);
 				system((char *)out);
-
-				sprintf(out, "/tmp/%s.j2c",new);
-				unlink(out);
-				/* cnt is not thread safe but it's 
-					just to get a sense of how long it
-					might take */
-				
-				if (verbose)  {
-					exec_end = time(NULL);
-			                int time_spent = (int)exec_end - 
-							(int)exec_begin;
-					printf("%li in %d secs\n",++cnt,
-						time_spent);
-				}
 			}
 			++ln;
 		}
@@ -97,6 +73,7 @@ void usage (void) {
 int main(int argc, char **argv){
 	
 	int 		c;
+        time_t 		exec_begin, exec_end;
         int		time_spent = 0;
 	pthread_t       *threads;           /* ptr to thread proc  */
 	parm            *p;                 /* pass data to thread */

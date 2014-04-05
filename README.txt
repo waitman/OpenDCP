@@ -36,12 +36,20 @@ security/xmlsec1
 textproc/libxslt
 textproc/expat2
 graphics/tiff
-graphics/openjpeg
+graphics/openjpeg *you may wish to build 1.52 from source distribution*/
 multimedia/asdcplib
 
-Note: The multimedia/asdcplib port does not install all the header files.
+Note: port security/xmlsec1 v1.2.19
+/usr/local/include/xmlsec1/xmlsec/templates.h
+has a typo, edit and change
+#define __XMLSEC_TEMPALTES_H__
+to
+#define __XMLSEC_TEMPLATES_H__
+at the top to avoid build error.
+
+Note: The multimedia/asdcplib port v1.11.49 
+does not install all the header files.
 Workaround is to 'make install', cd to wrksrc and copy *.h to
 /usr/local/include. Then 'make clean' to clean up wrksrc.
 multimedia/asdcplib also installs libkumu.
-
 

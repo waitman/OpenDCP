@@ -1,5 +1,5 @@
 CC	= clang
-CFLAGS	= -fPIC -c -Wall -Wextra -O2 -I../include -I/usr/local/include/libxml2 -I/usr/local/include/xmlsec1 -I/usr/local/include -DLIBXML_STATIC -DLIBXSLT_STATIC -DXMLSEC -DXMLSEC_STATIC -D_FILE_OFFSET_BITS=64 -DNDEBUG
+CFLAGS	= -fPIC -c -Wall -Wextra -O2 -I../include -I/usr/cust/include/openjpeg-1.5 -I/usr/local/include/libxml2 -I/usr/local/include/xmlsec1 -I/usr/local/include -DLIBXML_STATIC -DLIBXSLT_STATIC -DXMLSEC -DXMLSEC_STATIC -D_FILE_OFFSET_BITS=64 -DNDEBUG
 
 libopendcp:
 
