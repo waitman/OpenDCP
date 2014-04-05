@@ -1,0 +1,9 @@
+*.o
+*.so
+*.la
+*.a
+cli/opendcp_xml
+cli/opendcp_xml_verify
+cli/opendcp_j2k
+cli/runj2k
+cli/opendcp_mxf
