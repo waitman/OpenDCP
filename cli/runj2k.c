@@ -44,21 +44,12 @@ void *runner(void *arg) {
 				char out[1024]={0};
 				/* needs to be in your path */
 				line[(strlen(line)-1)]='\0';
-				char new[12] = {0};
-				strncpy(new,line+36,10);
-/* convert! */
-				sprintf(out, "convert \"%s\" /tmp/%s.j2c",line,new);
-				if (verbose)
-					printf("%li\t%s\n",ln,out);
-				system((char *)out);
 
-				sprintf(out, "opendcp_j2k\t%s\t-i /tmp/%s.j2c",cmd,new);
+				sprintf(out, "opendcp_j2k\t%s\t-i \"%s\"",cmd,line);
 				if (verbose) 
 					printf("%li\t%s\n",ln,out);
 				system((char *)out);
 
-				sprintf(out, "/tmp/%s.j2c",new);
-				unlink(out);
 				/* cnt is not thread safe but it's 
 					just to get a sense of how long it
 					might take */
