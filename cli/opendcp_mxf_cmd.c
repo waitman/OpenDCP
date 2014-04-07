@@ -22,10 +22,12 @@
 #include <stdio.h>
 #include <time.h>
 #include <sys/stat.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
 #include <opendcp.h>
 #include "opendcp_cli.h"
 
-void progress_bar();
 
 void version() {
     FILE *fp;
@@ -122,12 +124,17 @@ filelist_t *get_filelist_3d(char *in_path_left, char *in_path_right) {
 
 int total = 0;
 int val   = 0;
+time_t	exec_begin, exec_end;
 
 int frame_done_cb(void *p) {
-    val++;
+    ++val;
     UNUSED(p);
-    progress_bar();
 
+	if ((val%1000)==0) {
+		exec_end = time(NULL);
+		printf("%i frames in %i secs.\n",val,
+			(int)exec_end-(int)exec_begin);
+	}
     return 0;
 }
 
@@ -136,26 +143,6 @@ int write_done_cb(void *p) {
     printf("\n  MXF Complete\n");
 
     return 0;
-}
-
-void progress_bar() {
-    int x;
-    int step = 20;
-    float c = (float)step / total * (float)val;
-
-    printf("  MXF Creation [");
-
-    for (x = 0; x < step; x++) {
-        if (c > x) {
-            printf("=");
-        }
-        else {
-            printf(" ");
-        }
-    }
-
-    printf("] 100%% [%d/%d]\r", val, total);
-    fflush(stdout);
 }
 
 int main (int argc, char **argv) {
@@ -170,6 +157,8 @@ int main (int argc, char **argv) {
     if (argc <= 1) {
         dcp_usage();
     }
+
+    exec_begin = time(NULL);
 
     opendcp = opendcp_create();
 
@@ -362,18 +351,6 @@ int main (int argc, char **argv) {
         dcp_fatal(opendcp, "No input files located");
     }
 
-#ifdef _WIN32
-
-    /* check for non-ascii filenames under windows */
-    for (c = 0; c < filelist->nfiles; c++) {
-        if (is_filename_ascii(filelist->files[c]) == 0) {
-            OPENDCP_LOG(LOG_ERROR, "Filename %s contains non-ascii characters, skipping", filelist->files[c]);
-            dcp_fatal(opendcp, "Filenames cannot contain non-ascii characters");
-        }
-    }
-
-#endif
-
     if (opendcp->mxf.end_frame) {
         if (opendcp->mxf.end_frame > filelist->nfiles) {
             dcp_fatal(opendcp, "End frame is greater than the actual frame count");
@@ -411,7 +388,6 @@ int main (int argc, char **argv) {
 
     int class = get_file_essence_class(filelist->files[0], 1);
 
-    if (opendcp->log_level > 0 && opendcp->log_level < 3) { progress_bar(); }
 
     if (class == ACT_SOUND) {
         total = get_wav_duration(filelist->files[0], opendcp->frame_rate);
@@ -433,7 +409,14 @@ int main (int argc, char **argv) {
         printf("\n");
     }
 
+    printf("\n%i total frames.\n",
+	(int)(opendcp->mxf.end_frame-opendcp->mxf.start_frame));
+
     opendcp_delete(opendcp);
+
+    exec_end = time(NULL);
+    int time_spent = (int)exec_end -(int)exec_begin;
+    printf("\ntime: %d secs\n\n", time_spent);
 
     exit(0);
 }
